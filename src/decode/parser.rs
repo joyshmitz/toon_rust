@@ -8,9 +8,16 @@ use crate::shared::string_utils::{find_closing_quote, find_unquoted_char, unesca
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ArrayHeaderInfo {
     pub key: Option<String>,
+    pub key_was_quoted: bool,
     pub length: usize,
     pub delimiter: char,
-    pub fields: Option<Vec<String>>,
+    pub fields: Option<Vec<FieldName>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FieldName {
+    pub name: String,
+    pub was_quoted: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -78,10 +85,12 @@ pub fn parse_array_header_line(
     };
 
     let mut key: Option<String> = None;
+    let mut key_was_quoted = false;
     if bracket_start > 0 {
         let raw_key = content[..bracket_start].trim();
         if raw_key.starts_with(DOUBLE_QUOTE) {
             key = Some(parse_string_literal(raw_key)?);
+            key_was_quoted = true;
         } else if !raw_key.is_empty() {
             key = Some(raw_key.to_string());
         }
@@ -94,7 +103,7 @@ pub fn parse_array_header_line(
         return Ok(None);
     };
 
-    let mut fields: Option<Vec<String>> = None;
+    let mut fields: Option<Vec<FieldName>> = None;
     if let Some(brace_start) = brace_start {
         if brace_start < colon_index {
             if let Some(found_end) = content[brace_start..].find(CLOSE_BRACE) {
@@ -103,7 +112,12 @@ pub fn parse_array_header_line(
                     let fields_content = &content[brace_start + 1..found_end];
                     let parsed_fields = parse_delimited_values(fields_content, delimiter)
                         .into_iter()
-                        .map(|field| parse_string_literal(field.trim()))
+                        .map(|field| {
+                            let trimmed = field.trim();
+                            let was_quoted = trimmed.starts_with(DOUBLE_QUOTE);
+                            let name = parse_string_literal(trimmed)?;
+                            Ok(FieldName { name, was_quoted })
+                        })
                         .collect::<Result<Vec<_>>>()?;
                     fields = Some(parsed_fields);
                 }
@@ -114,6 +128,7 @@ pub fn parse_array_header_line(
     Ok(Some(ArrayHeaderParseResult {
         header: ArrayHeaderInfo {
             key,
+            key_was_quoted,
             length,
             delimiter,
             fields,

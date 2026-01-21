@@ -1,6 +1,6 @@
 use crate::JsonStreamEvent;
 use crate::decode::parser::{
-    is_array_header_content, is_key_value_content, map_row_values_to_primitives,
+    FieldName, is_array_header_content, is_key_value_content, map_row_values_to_primitives,
     parse_array_header_line, parse_delimited_values, parse_key_token, parse_primitive_token,
 };
 use crate::decode::scanner::{
@@ -100,7 +100,7 @@ fn decode_key_value_sync(
         if let Some(key) = header_info.header.key.clone() {
             events.push(JsonStreamEvent::Key {
                 key,
-                was_quoted: false,
+                was_quoted: header_info.header.key_was_quoted,
             });
             decode_array_from_header_sync(events, header_info, cursor, base_depth, options)?;
             return Ok(());
@@ -409,7 +409,7 @@ fn decode_list_item_sync(
             events.push(JsonStreamEvent::StartObject);
             events.push(JsonStreamEvent::Key {
                 key: header.key.clone().unwrap_or_default(),
-                was_quoted: false,
+                was_quoted: header.key_was_quoted,
             });
             decode_array_from_header_sync(
                 events,
@@ -485,14 +485,14 @@ fn decode_list_item_sync(
 
 fn yield_object_from_fields(
     events: &mut Vec<JsonStreamEvent>,
-    fields: &[String],
+    fields: &[FieldName],
     primitives: &[crate::JsonPrimitive],
 ) {
     events.push(JsonStreamEvent::StartObject);
     for (idx, field) in fields.iter().enumerate() {
         events.push(JsonStreamEvent::Key {
-            key: field.clone(),
-            was_quoted: false,
+            key: field.name.clone(),
+            was_quoted: field.was_quoted,
         });
         if let Some(value) = primitives.get(idx) {
             events.push(JsonStreamEvent::Primitive {
