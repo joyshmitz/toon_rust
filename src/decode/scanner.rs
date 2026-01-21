@@ -87,7 +87,7 @@ pub fn parse_line_incremental(
         if indent_size == 0 {
             if indent > 0 {
                 return Err(ToonError::message(format!(
-                    "Line {line_number}: Indentation must be exact multiple of {indent_size}, but found {indent} spaces"
+                    "Line {line_number}: Indentation not allowed when indent size is 0, but found {indent} spaces"
                 )));
             }
         } else if indent > 0 && indent % indent_size != 0 {

@@ -2,6 +2,7 @@ use crate::decode::parser::ArrayHeaderInfo;
 use crate::decode::scanner::{BlankLineInfo, Depth, ParsedLine};
 use crate::error::{Result, ToonError};
 use crate::shared::constants::{COLON, LIST_ITEM_PREFIX};
+use crate::shared::string_utils::find_unquoted_char;
 
 /// Assert the expected count in strict mode.
 ///
@@ -102,13 +103,16 @@ pub fn validate_no_blank_lines_in_range(
 }
 
 fn is_data_row(content: &str, delimiter: char) -> bool {
-    let colon_pos = content.find(COLON);
-    let delimiter_pos = content.find(delimiter);
+    // Find first unquoted colon and delimiter to properly handle quoted strings
+    let colon_pos = find_unquoted_char(content, COLON, 0);
+    let delimiter_pos = find_unquoted_char(content, delimiter, 0);
 
+    // If no unquoted colon, it's definitely a data row
     if colon_pos.is_none() {
         return true;
     }
 
+    // If delimiter comes before colon (outside quotes), it's a data row
     if let Some(delimiter_pos) = delimiter_pos {
         if let Some(colon_pos) = colon_pos {
             return delimiter_pos < colon_pos;
