@@ -14,7 +14,8 @@ use crate::{JsonArray, JsonObject, JsonPrimitive, JsonValue};
 
 #[must_use]
 pub fn encode_json_value(value: &JsonValue, options: &ResolvedEncodeOptions) -> Vec<String> {
-    let mut out = Vec::new();
+    let estimated_lines = estimate_line_count(value);
+    let mut out = Vec::with_capacity(estimated_lines);
     match value {
         JsonValue::Primitive(primitive) => {
             let encoded = encode_primitive(primitive, options.delimiter);
@@ -41,13 +42,14 @@ fn encode_object_lines(
     remaining_depth: Option<usize>,
     out: &mut Vec<String>,
 ) {
-    let keys: Vec<String> = value.iter().map(|(key, _)| key.clone()).collect();
+    // Collect keys as references to avoid cloning
+    let keys: Vec<&str> = value.iter().map(|(key, _)| key.as_str()).collect();
 
     let mut root_literal_set = HashSet::new();
     let root_literal_keys = if depth == 0 && root_literal_keys.is_none() {
         for key in &keys {
             if key.contains(DOT) {
-                root_literal_set.insert(key.clone());
+                root_literal_set.insert((*key).to_string());
             }
         }
         Some(&root_literal_set)
@@ -78,7 +80,7 @@ fn encode_key_value_pair_lines(
     value: &JsonValue,
     depth: usize,
     options: &ResolvedEncodeOptions,
-    siblings: &[String],
+    siblings: &[&str],
     root_literal_keys: Option<&HashSet<String>>,
     path_prefix: Option<&str>,
     flatten_depth: usize,
@@ -102,9 +104,10 @@ fn encode_key_value_pair_lines(
             match folded.leaf_value {
                 JsonValue::Primitive(primitive) => {
                     let encoded = encode_primitive(&primitive, options.delimiter);
-                    out.push(indented_line(
+                    out.push(indented_key_value_line(
                         depth,
-                        &format!("{encoded_key}: {encoded}"),
+                        &encoded_key,
+                        &encoded,
                         options.indent,
                     ));
                     return;
@@ -115,9 +118,9 @@ fn encode_key_value_pair_lines(
                 }
                 JsonValue::Object(entries) => {
                     if is_empty_object(&entries) {
-                        out.push(indented_line(
+                        out.push(indented_key_colon_line(
                             depth,
-                            &format!("{encoded_key}:"),
+                            &encoded_key,
                             options.indent,
                         ));
                         return;
@@ -127,11 +130,7 @@ fn encode_key_value_pair_lines(
         }
 
         if let Some(JsonValue::Object(entries)) = folded.remainder {
-            out.push(indented_line(
-                depth,
-                &format!("{encoded_key}:"),
-                options.indent,
-            ));
+            out.push(indented_key_colon_line(depth, &encoded_key, options.indent));
             let remaining_depth = flatten_depth.saturating_sub(folded.segment_count);
             let folded_path = if let Some(prefix) = path_prefix {
                 format!("{prefix}{DOT}{}", folded.folded_key)
@@ -156,9 +155,10 @@ fn encode_key_value_pair_lines(
     match value {
         JsonValue::Primitive(primitive) => {
             let encoded = encode_primitive(primitive, options.delimiter);
-            out.push(indented_line(
+            out.push(indented_key_value_line(
                 depth,
-                &format!("{encoded_key}: {encoded}"),
+                &encoded_key,
+                &encoded,
                 options.indent,
             ));
         }
@@ -166,11 +166,7 @@ fn encode_key_value_pair_lines(
             encode_array_lines(Some(key), items, depth, options, out);
         }
         JsonValue::Object(entries) => {
-            out.push(indented_line(
-                depth,
-                &format!("{encoded_key}:"),
-                options.indent,
-            ));
+            out.push(indented_key_colon_line(depth, &encoded_key, options.indent));
             if !is_empty_object(entries) {
                 encode_object_lines(
                     entries,
@@ -259,7 +255,12 @@ fn encode_inline_array_line(values: &JsonArray, delimiter: char, key: Option<&st
         return header;
     }
     let joined = encode_and_join_primitives(&primitives, delimiter);
-    format!("{header} {joined}")
+    // Build "header joined" without format!
+    let mut out = String::with_capacity(header.len() + 1 + joined.len());
+    out.push_str(&header);
+    out.push(' ');
+    out.push_str(&joined);
+    out
 }
 
 fn encode_array_of_objects_as_tabular_lines(
@@ -400,32 +401,36 @@ fn encode_object_as_list_item_lines(
     match first_value {
         JsonValue::Primitive(primitive) => {
             let encoded = encode_primitive(&primitive, options.delimiter);
-            out.push(indented_list_item(
+            out.push(indented_list_item_key_value(
                 depth,
-                &format!("{encoded_key}: {encoded}"),
+                &encoded_key,
+                &encoded,
                 options.indent,
             ));
         }
         JsonValue::Array(items) => {
             if items.is_empty() {
                 let header = format_header(0, None, None, options.delimiter);
-                out.push(indented_list_item(
+                out.push(indented_list_item_key_header(
                     depth,
-                    &format!("{encoded_key}{header}"),
+                    &encoded_key,
+                    &header,
                     options.indent,
                 ));
             } else if is_array_of_primitives(&items) {
                 let line = encode_inline_array_line(&items, options.delimiter, None);
-                out.push(indented_list_item(
+                out.push(indented_list_item_key_header(
                     depth,
-                    &format!("{encoded_key}{line}"),
+                    &encoded_key,
+                    &line,
                     options.indent,
                 ));
             } else {
                 let header = format_header(items.len(), None, None, options.delimiter);
-                out.push(indented_list_item(
+                out.push(indented_list_item_key_header(
                     depth,
-                    &format!("{encoded_key}{header}"),
+                    &encoded_key,
+                    &header,
                     options.indent,
                 ));
                 for item in &items {
@@ -434,11 +439,7 @@ fn encode_object_as_list_item_lines(
             }
         }
         JsonValue::Object(entries) => {
-            out.push(indented_list_item(
-                depth,
-                &format!("{encoded_key}:"),
-                options.indent,
-            ));
+            out.push(indented_list_item_key_colon(depth, &encoded_key, options.indent));
             if !is_empty_object(&entries) {
                 encode_object_lines(&entries, depth + 2, options, None, None, None, out);
             }
@@ -484,10 +485,122 @@ fn object_get<'a>(entries: &'a JsonObject, key: &str) -> Option<&'a JsonValue> {
 }
 
 fn indented_line(depth: usize, content: &str, indent_size: usize) -> String {
-    let indentation = " ".repeat(indent_size * depth);
-    format!("{indentation}{content}")
+    let indent_chars = indent_size * depth;
+    let mut out = String::with_capacity(indent_chars + content.len());
+    for _ in 0..indent_chars {
+        out.push(' ');
+    }
+    out.push_str(content);
+    out
+}
+
+/// Build "key: value" line directly without intermediate format! allocation
+fn indented_key_value_line(
+    depth: usize,
+    key: &str,
+    value: &str,
+    indent_size: usize,
+) -> String {
+    let indent_chars = indent_size * depth;
+    // key + ": " + value
+    let mut out = String::with_capacity(indent_chars + key.len() + 2 + value.len());
+    for _ in 0..indent_chars {
+        out.push(' ');
+    }
+    out.push_str(key);
+    out.push_str(": ");
+    out.push_str(value);
+    out
+}
+
+/// Build "key:" line directly without intermediate format! allocation
+fn indented_key_colon_line(depth: usize, key: &str, indent_size: usize) -> String {
+    let indent_chars = indent_size * depth;
+    // key + ":"
+    let mut out = String::with_capacity(indent_chars + key.len() + 1);
+    for _ in 0..indent_chars {
+        out.push(' ');
+    }
+    out.push_str(key);
+    out.push(':');
+    out
 }
 
 fn indented_list_item(depth: usize, content: &str, indent_size: usize) -> String {
-    indented_line(depth, &format!("{LIST_ITEM_PREFIX}{content}"), indent_size)
+    let indent_chars = indent_size * depth;
+    let prefix_len = LIST_ITEM_PREFIX.len();
+    let mut out = String::with_capacity(indent_chars + prefix_len + content.len());
+    for _ in 0..indent_chars {
+        out.push(' ');
+    }
+    out.push_str(LIST_ITEM_PREFIX);
+    out.push_str(content);
+    out
+}
+
+/// Build "- key: value" list item directly without intermediate format! allocation
+fn indented_list_item_key_value(
+    depth: usize,
+    key: &str,
+    value: &str,
+    indent_size: usize,
+) -> String {
+    let indent_chars = indent_size * depth;
+    let prefix_len = LIST_ITEM_PREFIX.len();
+    // "- " + key + ": " + value
+    let mut out = String::with_capacity(indent_chars + prefix_len + key.len() + 2 + value.len());
+    for _ in 0..indent_chars {
+        out.push(' ');
+    }
+    out.push_str(LIST_ITEM_PREFIX);
+    out.push_str(key);
+    out.push_str(": ");
+    out.push_str(value);
+    out
+}
+
+/// Build "- key:" list item directly without intermediate format! allocation
+fn indented_list_item_key_colon(depth: usize, key: &str, indent_size: usize) -> String {
+    let indent_chars = indent_size * depth;
+    let prefix_len = LIST_ITEM_PREFIX.len();
+    // "- " + key + ":"
+    let mut out = String::with_capacity(indent_chars + prefix_len + key.len() + 1);
+    for _ in 0..indent_chars {
+        out.push(' ');
+    }
+    out.push_str(LIST_ITEM_PREFIX);
+    out.push_str(key);
+    out.push(':');
+    out
+}
+
+/// Build "- key[N]:" list item directly without intermediate format! allocation
+fn indented_list_item_key_header(depth: usize, key: &str, header: &str, indent_size: usize) -> String {
+    let indent_chars = indent_size * depth;
+    let prefix_len = LIST_ITEM_PREFIX.len();
+    // "- " + key + header
+    let mut out = String::with_capacity(indent_chars + prefix_len + key.len() + header.len());
+    for _ in 0..indent_chars {
+        out.push(' ');
+    }
+    out.push_str(LIST_ITEM_PREFIX);
+    out.push_str(key);
+    out.push_str(header);
+    out
+}
+
+/// Estimate the number of output lines for pre-allocation.
+/// This is a rough heuristic - over-estimation is fine, under-estimation causes reallocation.
+fn estimate_line_count(value: &JsonValue) -> usize {
+    match value {
+        JsonValue::Primitive(_) => 1,
+        JsonValue::Array(items) => {
+            // Header line + recursively estimate each item
+            1 + items.iter().map(estimate_line_count).sum::<usize>()
+        }
+        JsonValue::Object(entries) => {
+            // Each entry produces at least one line
+            entries.iter().map(|(_, v)| estimate_line_count(v)).sum::<usize>().max(1)
+        }
+    }
 }

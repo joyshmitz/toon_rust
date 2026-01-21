@@ -54,9 +54,9 @@ pub fn parse_line_incremental(
         indent += 1;
     }
 
-    let content = raw[indent..].to_string();
-
-    if content.trim().is_empty() {
+    // Check if line is blank before allocating content string
+    let content_slice = &raw[indent..];
+    if content_slice.trim().is_empty() {
         let depth = compute_depth_from_indent(indent, indent_size);
         state.blank_lines.push(BlankLineInfo {
             line_number,
@@ -66,6 +66,8 @@ pub fn parse_line_incremental(
         return Ok(None);
     }
 
+    // Only allocate content string for non-blank lines
+    let content = content_slice.to_string();
     let depth = compute_depth_from_indent(indent, indent_size);
 
     if strict {
@@ -162,19 +164,22 @@ impl StreamingLineCursor {
     }
 
     pub fn advance_sync(&mut self) {
-        if let Some(line) = self.lines.get(self.index).cloned() {
-            self.last_line = Some(line);
+        if self.index < self.lines.len() {
+            // Store index instead of cloning
+            self.last_line = Some(self.lines[self.index].clone());
             self.index += 1;
         }
     }
 
     pub fn next_sync(&mut self) -> Option<ParsedLine> {
-        let line = self.lines.get(self.index).cloned();
-        if line.is_some() {
-            self.last_line.clone_from(&line);
+        if self.index < self.lines.len() {
+            let line = self.lines[self.index].clone();
+            self.last_line = Some(line.clone());
             self.index += 1;
+            Some(line)
+        } else {
+            None
         }
-        line
     }
 
     #[must_use]

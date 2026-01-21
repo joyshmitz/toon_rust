@@ -34,7 +34,11 @@ pub fn encode_key(key: &str) -> String {
 
 #[must_use]
 pub fn encode_and_join_primitives(values: &[JsonPrimitive], delimiter: char) -> String {
-    let mut out = String::new();
+    if values.is_empty() {
+        return String::new();
+    }
+    // Estimate: average 10 chars per primitive + delimiter
+    let mut out = String::with_capacity(values.len() * 11);
     for (idx, value) in values.iter().enumerate() {
         if idx > 0 {
             out.push(delimiter);

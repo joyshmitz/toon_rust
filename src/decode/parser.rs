@@ -152,8 +152,10 @@ pub fn parse_bracket_segment(seg: &str, default_delimiter: char) -> Result<(usiz
 
 #[must_use]
 pub fn parse_delimited_values(input: &str, delimiter: char) -> Vec<String> {
-    let mut values = Vec::new();
-    let mut buffer = String::new();
+    // Pre-estimate capacity based on delimiter count
+    let estimated_count = input.chars().filter(|&c| c == delimiter).count() + 1;
+    let mut values = Vec::with_capacity(estimated_count);
+    let mut buffer = String::with_capacity(64); // Reasonable default for field values
     let mut in_quotes = false;
     let mut iter = input.chars();
 

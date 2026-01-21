@@ -19,7 +19,7 @@ pub struct FoldResult {
 pub fn try_fold_key_chain(
     key: &str,
     value: &JsonValue,
-    siblings: &[String],
+    siblings: &[&str],
     options: &ResolvedEncodeOptions,
     root_literal_keys: Option<&HashSet<String>>,
     path_prefix: Option<&str>,
@@ -48,9 +48,15 @@ pub fn try_fold_key_chain(
         return None;
     }
 
-    let folded_key = segments.join(&DOT.to_string());
+    let mut folded_key = String::with_capacity(segments.iter().map(String::len).sum::<usize>() + segments.len());
+    for (i, seg) in segments.iter().enumerate() {
+        if i > 0 {
+            folded_key.push(DOT);
+        }
+        folded_key.push_str(seg);
+    }
 
-    if siblings.iter().any(|sibling| sibling == &folded_key) {
+    if siblings.iter().any(|sibling| *sibling == folded_key) {
         return None;
     }
 
@@ -95,16 +101,15 @@ fn collect_single_key_chain(
         current_value = next_value;
     }
 
-    if let JsonValue::Object(ref entries) = current_value {
-        if is_empty_object(entries) {
-            return (segments, None, JsonValue::Object(entries.clone()));
+    match current_value {
+        JsonValue::Object(entries) if is_empty_object(&entries) => {
+            let obj = JsonValue::Object(entries);
+            (segments, None, obj)
         }
-        return (
-            segments,
-            Some(JsonValue::Object(entries.clone())),
-            JsonValue::Object(entries.clone()),
-        );
+        JsonValue::Object(entries) => {
+            let obj = JsonValue::Object(entries.clone());
+            (segments, Some(JsonValue::Object(entries)), obj)
+        }
+        other => (segments, None, other),
     }
-
-    (segments, None, current_value)
 }
