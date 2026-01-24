@@ -17,6 +17,30 @@ pub use options::{
     ResolvedEncodeOptions,
 };
 
+/// Convenience wrapper: parse JSON text and encode to TOON.
+///
+/// For lower-level control, parse JSON yourself and call [`encode`].
+///
+/// # Errors
+/// Returns an error if the JSON input is invalid.
+pub fn json_to_toon(json: &str) -> crate::error::Result<String> {
+    let value: serde_json::Value =
+        serde_json::from_str(json).map_err(|err| crate::error::ToonError::message(err.to_string()))?;
+    Ok(encode(value, None))
+}
+
+/// Convenience wrapper: decode TOON and return compact JSON text.
+///
+/// For lower-level control, call [`try_decode`] and handle [`JsonValue`] directly.
+///
+/// # Errors
+/// Returns an error if the TOON input is invalid.
+pub fn toon_to_json(toon: &str) -> crate::error::Result<String> {
+    let value = try_decode(toon, None)?;
+    let value = serde_json::Value::from(value);
+    serde_json::to_string(&value).map_err(|err| crate::error::ToonError::message(err.to_string()))
+}
+
 pub type JsonPrimitive = StringOrNumberOrBoolOrNull;
 pub type JsonObject = Vec<(String, JsonValue)>;
 pub type JsonArray = Vec<JsonValue>;
@@ -134,6 +158,28 @@ impl From<serde_json::Value> for JsonValue {
                     entries.push((key, Self::from(value)));
                 }
                 Self::Object(entries)
+            }
+        }
+    }
+}
+
+impl From<JsonValue> for serde_json::Value {
+    fn from(value: JsonValue) -> Self {
+        match value {
+            JsonValue::Primitive(p) => match p {
+                StringOrNumberOrBoolOrNull::String(value) => Self::String(value),
+                StringOrNumberOrBoolOrNull::Number(value) => serde_json::Number::from_f64(value)
+                    .map_or(Self::Null, Self::Number),
+                StringOrNumberOrBoolOrNull::Bool(value) => Self::Bool(value),
+                StringOrNumberOrBoolOrNull::Null => Self::Null,
+            },
+            JsonValue::Array(arr) => Self::Array(arr.into_iter().map(Self::from).collect()),
+            JsonValue::Object(obj) => {
+                let mut map = serde_json::Map::new();
+                for (key, val) in obj {
+                    map.insert(key, Self::from(val));
+                }
+                Self::Object(map)
             }
         }
     }

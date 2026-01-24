@@ -1,11 +1,11 @@
-# TOON Rust Integration Guide (toon_rust / tr)
+# TOON Rust Integration Guide (toon_rust / toon-tr)
 
 This guide documents the public API, CLI behavior, error patterns, and recommended integration patterns for the TOON Rust implementation.
 
 ## Project Purpose and Architecture (Short)
 
 - Purpose: Spec-first TOON encoder/decoder in Rust with deterministic output and strict validation.
-- Binary: `tr` (src/main.rs) is a thin CLI wrapper that calls `toon_rust::cli::run()`.
+- Binary: `toon-tr` (src/main.rs) is a thin CLI wrapper that calls `toon_rust::cli::run()`. It is named `toon-tr` to avoid conflicting with coreutils `tr`.
 - Library: `toon_rust` exposes encode/decode functions and JSON event types for integration.
 - Pipeline: encode uses normalize -> optional replacer -> key folding -> emit lines. Decode scans lines -> parses tokens -> builds events -> builds JSON tree (with optional path expansion).
 
@@ -21,10 +21,10 @@ Key modules:
 ```
 # Build and run locally
 cargo build --release
-./target/release/tr --help
+./target/release/toon-tr --help
 
 # Or install from git
-cargo install --git https://github.com/Dicklesworthstone/toon_rust
+cargo install --git https://github.com/Dicklesworthstone/toon_rust --bin toon-tr
 ```
 
 ### Library (Cargo.toml)
@@ -118,7 +118,7 @@ toon_rust = { path = "../toon_rust" }
 - `decode()` and `decode_from_lines()` panic on errors (they call the fallible versions and unwrap).
 - CLI prints error to stderr and exits with code 1.
 
-## CLI Reference (tr)
+## CLI Reference (toon-tr)
 
 Auto-detection:
 - `.json` -> encode
@@ -140,12 +140,12 @@ Flags:
 Examples:
 
 ```
-tr input.json                  # encode to TOON
-tr input.toon                  # decode to JSON
-tr input.json -o output.toon
-cat data.json | tr
-cat data.toon | tr -d
-tr input.json --stats
+toon-tr input.json                  # encode to TOON
+toon-tr input.toon                  # decode to JSON
+toon-tr input.json -o output.toon
+cat data.json | toon-tr --encode
+cat data.toon | toon-tr --decode
+toon-tr input.json --stats
 ```
 
 ## Integration Patterns
@@ -204,7 +204,7 @@ fn render_payload(value: serde_json::Value, format: OutputFormat) -> String {
 }
 ```
 
-### 3) Stats Pattern (mirrors tr)
+### 3) Stats Pattern (mirrors toon-tr)
 
 Token estimate heuristic used by CLI:
 
@@ -239,7 +239,7 @@ This enables large outputs without building a full JSON string in one allocation
 
 Encode benchmarks (hyperfine, 10 runs):
 
-| Input Size | Node.js (toon) | Rust (tr) | Speedup |
+| Input Size | Node.js (toon) | Rust (toon-tr) | Speedup |
 | --- | --- | --- | --- |
 | 336 B | 82 ms | 3 ms | 27x |
 | 144 KB (1.5K rows) | 92 ms | 11 ms | 8x |
@@ -247,7 +247,7 @@ Encode benchmarks (hyperfine, 10 runs):
 
 Decode benchmarks:
 
-| Input Size | Node.js (toon) | Rust (tr) | Speedup |
+| Input Size | Node.js (toon) | Rust (toon-tr) | Speedup |
 | --- | --- | --- | --- |
 | 379 KB TOON | 519 ms | 59 ms | 9x |
 

@@ -6,12 +6,15 @@ use std::path::PathBuf;
 #[command(name = "tr", version, about, long_about = None)]
 #[allow(clippy::struct_excessive_bools)]
 #[command(after_help = "EXAMPLES:
-    tr input.json                  # Encode JSON to TOON (stdout)
-    tr input.toon                  # Decode TOON to JSON (stdout)
-    tr input.json -o output.toon   # Encode to file
-    cat data.json | tr             # Encode from stdin
-    cat data.toon | tr -d          # Decode from stdin
-    tr input.json --stats          # Show token statistics")]
+    toon-tr input.json                  # Encode JSON to TOON (stdout)
+    toon-tr input.toon                  # Decode TOON to JSON (stdout)
+    toon-tr input.json -o output.toon   # Encode to file
+    cat data.json | toon-tr --encode    # Encode from stdin
+    cat data.toon | toon-tr --decode    # Decode from stdin
+    toon-tr input.json --stats          # Show token statistics
+
+NOTE:
+    This tool is commonly installed as `toon-tr` to avoid conflicting with the system `tr`.")]
 pub struct Args {
     /// Input file path (omit or use "-" to read from stdin)
     #[arg(value_name = "INPUT")]

@@ -1,4 +1,4 @@
-# Proposed Architecture for `tr` (toon_rust)
+# Proposed Architecture for `toon-tr` (toon_rust)
 
 ## Using Rust Best Practices from beads_rust
 
@@ -10,7 +10,7 @@
 
 ## Executive Summary
 
-This document defines the Rust architecture for `tr`, the TOON reference port.
+This document defines the Rust architecture for `toon-tr`, the TOON reference port.
 It mirrors the TypeScript implementation's behavior while using Rust best practices
 and the conventions established in `beads_rust`.
 

@@ -32,28 +32,28 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact: tr
-            asset: tr-linux-amd64
+            artifact: toon-tr
+            asset: toon-tr-linux-amd64
             cross: false
           - os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
-            artifact: tr
-            asset: tr-linux-arm64
+            artifact: toon-tr
+            asset: toon-tr-linux-arm64
             cross: true
           - os: macos-13
             target: x86_64-apple-darwin
-            artifact: tr
-            asset: tr-darwin-amd64
+            artifact: toon-tr
+            asset: toon-tr-darwin-amd64
             cross: false
           - os: macos-14
             target: aarch64-apple-darwin
-            artifact: tr
-            asset: tr-darwin-arm64
+            artifact: toon-tr
+            asset: toon-tr-darwin-arm64
             cross: false
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            artifact: tr.exe
-            asset: tr-windows-amd64.exe
+            artifact: toon-tr.exe
+            asset: toon-tr-windows-amd64
             cross: false
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -72,7 +72,7 @@ jobs:
           echo '[target.aarch64-unknown-linux-gnu]' >> ~/.cargo/config.toml
           echo 'linker = "aarch64-linux-gnu-gcc"' >> ~/.cargo/config.toml
       - name: Build release binary
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.target }} --bin toon-tr
 
       - name: Create tarball (Unix)
         if: runner.os != 'Windows'

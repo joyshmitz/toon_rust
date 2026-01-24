@@ -1,4 +1,4 @@
-# AGENTS.md — toon_rust (tr)
+# AGENTS.md — toon_rust (toon-tr)
 
 > Guidelines for AI coding agents working in this Rust codebase.
 
@@ -75,7 +75,7 @@ New files are reserved for **genuinely new functionality** that makes zero sense
 
 ---
 
-## Project Semantics (toon_rust / tr)
+## Project Semantics (toon_rust / toon-tr)
 
 This project is a Rust port of the TOON reference implementation.
 
@@ -83,7 +83,7 @@ This project is a Rust port of the TOON reference implementation.
 - **TOON format fidelity:** Output must conform to the official TOON spec (v3.0) and match reference behavior for core paths.
 - **JSON model parity:** Encode/decode must preserve JSON primitives, arrays, and objects losslessly.
 - **Streaming-first:** Encode and decode should support streaming APIs where possible (line/event iterators).
-- **CLI parity:** `tr` should mirror the `toon` CLI flags and behavior (auto-detect encode/decode, stdin/stdout streaming, stats output).
+- **CLI parity:** `toon-tr` should mirror the `toon` CLI flags and behavior (auto-detect encode/decode, stdin/stdout streaming, stats output).
 
 ### What We're NOT Porting
 

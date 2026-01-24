@@ -5,7 +5,7 @@
 
 ## Summary
 
-The `tr` (toon_rust) CLI achieves **full feature parity** with the TypeScript reference implementation. All encode/decode operations, CLI flags, and streaming behaviors match the spec.
+The `toon-tr` (toon_rust) CLI achieves **full feature parity** with the TypeScript reference implementation. All encode/decode operations, CLI flags, and streaming behaviors match the spec.
 
 ## CLI Flags
 

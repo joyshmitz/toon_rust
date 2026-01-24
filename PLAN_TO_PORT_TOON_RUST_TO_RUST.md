@@ -1,7 +1,7 @@
 # Plan: Port TOON Reference Implementation to Rust
 
 > **Project:** toon_rust  
-> **Binary Name:** `tr`  
+> **Binary Name:** `toon-tr`  
 > **Status:** Planning Phase (Spec-first)  
 > **Reference Repo:** `legacy_toon/` (TypeScript reference implementation)
 
@@ -10,7 +10,7 @@
 ## Executive Summary
 
 This plan defines a **spec-first** Rust port of the TOON reference implementation. The goal is to deliver a
-single native binary (`tr`) and a Rust library that **matches the TypeScript behavior exactly**, including
+single native binary (`toon-tr`) and a Rust library that **matches the TypeScript behavior exactly**, including
 streaming encode/decode, key folding, path expansion, strict validation, and CLI UX. The output must remain
 fully compatible with the TOON v3.0 specification and the existing CLI contract.
 
@@ -139,7 +139,7 @@ Primary sources for behavior:
 We will build a conformance harness that:
 
 1. Runs **legacy_toon** on fixture inputs to produce canonical outputs.
-2. Runs **tr** on the same fixtures.
+2. Runs **toon-tr** on the same fixtures.
 3. Compares output byte-for-byte.
 
 Fixtures will cover:

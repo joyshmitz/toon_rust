@@ -596,12 +596,12 @@ Streaming JSON stringify for full values:
 
 ## 7. CLI Commands Specification
 
-CLI entry: `toon` (Rust port: `tr`)
+CLI entry: `toon` (Rust port: `toon-tr`)
 
 Usage:
 
 ```
-tr [options] [input]
+toon-tr [options] [input]
 ```
 
 ### Input / Output
