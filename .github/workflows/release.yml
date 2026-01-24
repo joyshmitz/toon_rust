@@ -124,8 +124,9 @@ jobs:
         id: version
         run: |
           if [ -n "${{ inputs.tag }}" ]; then
-            echo "version=${{ inputs.tag }}" | sed 's/^v//' >> $GITHUB_OUTPUT
-            echo "tag=${{ inputs.tag }}" >> $GITHUB_OUTPUT
+            tag="${{ inputs.tag }}"
+            echo "tag=$tag" >> $GITHUB_OUTPUT
+            echo "version=${tag#v}" >> $GITHUB_OUTPUT
           else
             echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
             echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
