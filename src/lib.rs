@@ -19,7 +19,7 @@ pub use options::{
 
 /// Convenience wrapper: parse JSON text and encode to TOON.
 ///
-/// For lower-level control, parse JSON yourself and call [`encode`].
+/// For lower-level control, parse JSON yourself and call [`encode()`].
 ///
 /// # Errors
 /// Returns an error if the JSON input is invalid.
