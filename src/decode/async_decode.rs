@@ -22,12 +22,14 @@
 //! }
 //! ```
 
+use crate::JsonStreamEvent;
 use crate::decode::decoders as decoder_impl;
-use crate::decode::scanner::{create_scan_state, parse_line_incremental, ParsedLine, StreamingScanState};
+use crate::decode::scanner::{
+    ParsedLine, StreamingScanState, create_scan_state, parse_line_incremental,
+};
 use crate::error::Result;
 use crate::options::DecodeStreamOptions;
-use crate::JsonStreamEvent;
-use asupersync::stream::{iter, Stream, StreamExt};
+use asupersync::stream::{Stream, StreamExt, iter};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -118,11 +120,7 @@ impl<I: Iterator<Item = String>> AsyncDecodeStream<I> {
         }
 
         // Decode all accumulated lines
-        let lines: Vec<String> = self
-            .parsed_lines
-            .iter()
-            .map(|p| p.raw.clone())
-            .collect();
+        let lines: Vec<String> = self.parsed_lines.iter().map(|p| p.raw.clone()).collect();
 
         let events = decoder_impl::decode_stream_sync(
             lines,
@@ -221,7 +219,7 @@ pub async fn try_decode_async(
 ) -> Result<crate::JsonValue> {
     use crate::decode::event_builder::{build_node_from_events, node_to_json};
     use crate::decode::expand::expand_paths_safe;
-    use crate::options::{resolve_decode_options, ExpandPathsMode};
+    use crate::options::{ExpandPathsMode, resolve_decode_options};
 
     let resolved = resolve_decode_options(options);
     let lines: Vec<String> = input.split('\n').map(String::from).collect();

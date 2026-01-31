@@ -17,7 +17,7 @@ use crate::{JsonStreamEvent, JsonValue};
 
 #[cfg(feature = "async-stream")]
 pub use async_decode::{
-    decode_stream_async, try_decode_async, try_decode_stream_async, AsyncDecodeStream,
+    AsyncDecodeStream, decode_stream_async, try_decode_async, try_decode_stream_async,
 };
 
 /// Try to decode a TOON string into a JSON value, returning a Result.
