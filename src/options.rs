@@ -34,7 +34,7 @@ pub enum ExpandPathsMode {
     Safe,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct DecodeStreamOptions {
     pub indent: Option<usize>,
     pub strict: Option<bool>,

@@ -5,12 +5,20 @@ pub mod parser;
 pub mod scanner;
 pub mod validation;
 
+#[cfg(feature = "async-stream")]
+mod async_decode;
+
 use crate::decode::decoders as decoder_impl;
 use crate::decode::event_builder::{build_node_from_events, node_to_json};
 use crate::decode::expand::expand_paths_safe;
 use crate::error::Result;
 use crate::options::{DecodeOptions, DecodeStreamOptions, ExpandPathsMode, resolve_decode_options};
 use crate::{JsonStreamEvent, JsonValue};
+
+#[cfg(feature = "async-stream")]
+pub use async_decode::{
+    decode_stream_async, try_decode_async, try_decode_stream_async, AsyncDecodeStream,
+};
 
 /// Try to decode a TOON string into a JSON value, returning a Result.
 ///
@@ -117,14 +125,35 @@ pub fn decode_stream_sync(
 /// This is the fallible version of [`decode_stream`]. Use this when you want to handle
 /// decoding errors gracefully instead of panicking.
 ///
+/// When the `async-stream` feature is enabled, this uses the asupersync runtime for
+/// true async streaming with cancellation support. Otherwise, it falls back to
+/// synchronous decoding wrapped in an async function.
+///
 /// # Errors
 ///
 /// Returns an error if decoding fails due to malformed input or strict-mode validation errors.
+#[cfg(not(feature = "async-stream"))]
 pub async fn try_decode_stream(
     lines: impl IntoIterator<Item = String>,
     options: Option<DecodeStreamOptions>,
 ) -> Result<Vec<JsonStreamEvent>> {
     decoder_impl::decode_stream_sync(lines, options)
+}
+
+/// Try to decode TOON lines into a stream of events asynchronously, returning a Result.
+///
+/// This version uses the asupersync runtime for true async streaming with
+/// cancellation support and yield points between line processing.
+///
+/// # Errors
+///
+/// Returns an error if decoding fails due to malformed input or strict-mode validation errors.
+#[cfg(feature = "async-stream")]
+pub async fn try_decode_stream(
+    lines: impl IntoIterator<Item = String>,
+    options: Option<DecodeStreamOptions>,
+) -> Result<Vec<JsonStreamEvent>> {
+    async_decode::try_decode_stream_async(lines, options).await
 }
 
 #[must_use]
