@@ -4,6 +4,15 @@ pub mod normalize;
 pub mod primitives;
 pub mod replacer;
 
+#[cfg(feature = "async-stream")]
+pub mod async_encode;
+
+#[cfg(feature = "async-stream")]
+pub use async_encode::{
+    AsyncEncodeEventStream, AsyncEncodeStream, encode_async, encode_events_async,
+    encode_lines_async,
+};
+
 use crate::encode::normalize::normalize_json_value;
 use crate::encode::replacer::apply_replacer;
 use crate::options::{EncodeOptions, resolve_encode_options};
