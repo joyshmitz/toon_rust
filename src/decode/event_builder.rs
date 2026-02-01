@@ -80,7 +80,7 @@ fn apply_event(state: &mut BuildState, event: JsonStreamEvent) -> Result<()> {
         }
         JsonStreamEvent::EndObject => {
             let Some(context) = state.stack.pop() else {
-                return Err(ToonError::message("Unexpected endObject event"));
+                return Err(ToonError::unexpected_event("endObject", "with empty stack"));
             };
             let BuildContext::Object {
                 entries,
@@ -88,7 +88,7 @@ fn apply_event(state: &mut BuildState, event: JsonStreamEvent) -> Result<()> {
                 ..
             } = context
             else {
-                return Err(ToonError::message("Mismatched endObject event"));
+                return Err(ToonError::mismatched_end("Object", "Array"));
             };
             let node = NodeValue::Object(ObjectNode {
                 entries,
@@ -121,10 +121,10 @@ fn apply_event(state: &mut BuildState, event: JsonStreamEvent) -> Result<()> {
         }
         JsonStreamEvent::EndArray => {
             let Some(context) = state.stack.pop() else {
-                return Err(ToonError::message("Unexpected endArray event"));
+                return Err(ToonError::unexpected_event("endArray", "with empty stack"));
             };
             let BuildContext::Array { items } = context else {
-                return Err(ToonError::message("Mismatched endArray event"));
+                return Err(ToonError::mismatched_end("Array", "Object"));
             };
             let node = NodeValue::Array(items);
             if let Some(parent) = state.stack.last_mut() {
@@ -156,7 +156,10 @@ fn apply_event(state: &mut BuildState, event: JsonStreamEvent) -> Result<()> {
                 ..
             }) = state.stack.last_mut()
             else {
-                return Err(ToonError::message("Key event outside of object context"));
+                return Err(ToonError::unexpected_event(
+                    "Key",
+                    "outside of object context",
+                ));
             };
             *current_key = Some(key.clone());
             if was_quoted {
@@ -195,12 +198,12 @@ fn apply_event(state: &mut BuildState, event: JsonStreamEvent) -> Result<()> {
 
 fn finalize_state(state: BuildState) -> Result<NodeValue> {
     if !state.stack.is_empty() {
-        return Err(ToonError::message(
+        return Err(ToonError::event_stream(
             "Incomplete event stream: stack not empty at end",
         ));
     }
 
     state
         .root
-        .ok_or_else(|| ToonError::message("No root value built from events"))
+        .ok_or_else(|| ToonError::event_stream("No root value built from events"))
 }

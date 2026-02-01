@@ -79,21 +79,24 @@ pub fn parse_line_incremental(
         }
 
         if raw[..whitespace_end].contains(TAB) {
-            return Err(ToonError::message(format!(
-                "Line {line_number}: Tabs are not allowed in indentation in strict mode"
-            )));
+            return Err(ToonError::tabs_not_allowed(line_number));
         }
 
         if indent_size == 0 {
             if indent > 0 {
-                return Err(ToonError::message(format!(
-                    "Line {line_number}: Indentation not allowed when indent size is 0, but found {indent} spaces"
-                )));
+                return Err(ToonError::validation(
+                    line_number,
+                    format!(
+                        "Indentation not allowed when indent size is 0, but found {indent} spaces"
+                    ),
+                ));
             }
         } else if indent > 0 && indent % indent_size != 0 {
-            return Err(ToonError::message(format!(
-                "Line {line_number}: Indentation must be exact multiple of {indent_size}, but found {indent} spaces"
-            )));
+            return Err(ToonError::invalid_indentation(
+                line_number,
+                indent_size,
+                indent,
+            ));
         }
     }
 
