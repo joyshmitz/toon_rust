@@ -18,8 +18,8 @@ pub fn encode_to_toon_lines(
     input_json: &str,
     options: Option<EncodeOptions>,
 ) -> Result<Vec<String>> {
-    let value: serde_json::Value = serde_json::from_str(input_json)
-        .map_err(|err| ToonError::message(format!("Failed to parse JSON: {err}")))?;
+    let value: serde_json::Value =
+        serde_json::from_str(input_json).map_err(|err| ToonError::json_parse(&err))?;
     let converted = JsonValue::from(value);
     Ok(crate::encode::encode_lines(converted, options))
 }

@@ -128,99 +128,82 @@ fn read_stdin() -> Result<String> {
     let mut buffer = String::new();
     io::stdin()
         .read_to_string(&mut buffer)
-        .map_err(|e| ToonError::message(format!("Failed to read stdin: {e}")))?;
+        .map_err(ToonError::stdin_read)?;
     Ok(buffer)
 }
 
 fn read_file(path: &Path) -> Result<String> {
-    std::fs::read_to_string(path)
-        .map_err(|e| ToonError::message(format!("Failed to read file '{}': {e}", path.display())))
+    std::fs::read_to_string(path).map_err(|e| ToonError::file_read(path.to_path_buf(), e))
 }
 
 fn write_output(args: &Args, data: &[u8]) -> Result<()> {
     if let Some(ref path) = args.output {
-        let mut file = File::create(path).map_err(|e| {
-            ToonError::message(format!("Failed to create file '{}': {e}", path.display()))
-        })?;
-        file.write_all(data).map_err(|e| {
-            ToonError::message(format!("Failed to write to file '{}': {e}", path.display()))
-        })?;
+        let mut file = File::create(path).map_err(|e| ToonError::file_create(path.clone(), e))?;
+        file.write_all(data)
+            .map_err(|e| ToonError::file_write(path.clone(), e))?;
         // Add trailing newline for file output
-        file.write_all(b"\n").map_err(|e| {
-            ToonError::message(format!("Failed to write to file '{}': {e}", path.display()))
-        })?;
+        file.write_all(b"\n")
+            .map_err(|e| ToonError::file_write(path.clone(), e))?;
     } else {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
-        handle
-            .write_all(data)
-            .map_err(|e| ToonError::message(format!("Failed to write to stdout: {e}")))?;
-        handle
-            .write_all(b"\n")
-            .map_err(|e| ToonError::message(format!("Failed to write to stdout: {e}")))?;
+        handle.write_all(data).map_err(ToonError::stdout_write)?;
+        handle.write_all(b"\n").map_err(ToonError::stdout_write)?;
     }
     Ok(())
 }
 
 fn write_lines(args: &Args, lines: &[String]) -> Result<()> {
     if let Some(ref path) = args.output {
-        let file = File::create(path).map_err(|e| {
-            ToonError::message(format!("Failed to create file '{}': {e}", path.display()))
-        })?;
+        let file = File::create(path).map_err(|e| ToonError::file_create(path.clone(), e))?;
         let mut writer = BufWriter::new(file);
 
         for (i, line) in lines.iter().enumerate() {
             if i > 0 {
                 writer
                     .write_all(b"\n")
-                    .map_err(|e| ToonError::message(format!("Write error: {e}")))?;
+                    .map_err(|e| ToonError::file_write(path.clone(), e))?;
             }
             writer
                 .write_all(line.as_bytes())
-                .map_err(|e| ToonError::message(format!("Write error: {e}")))?;
+                .map_err(|e| ToonError::file_write(path.clone(), e))?;
         }
         // Trailing newline
         writer
             .write_all(b"\n")
-            .map_err(|e| ToonError::message(format!("Write error: {e}")))?;
+            .map_err(|e| ToonError::file_write(path.clone(), e))?;
     } else {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
 
         for (i, line) in lines.iter().enumerate() {
             if i > 0 {
-                handle
-                    .write_all(b"\n")
-                    .map_err(|e| ToonError::message(format!("Write error: {e}")))?;
+                handle.write_all(b"\n").map_err(ToonError::stdout_write)?;
             }
             handle
                 .write_all(line.as_bytes())
-                .map_err(|e| ToonError::message(format!("Write error: {e}")))?;
+                .map_err(ToonError::stdout_write)?;
         }
         // Trailing newline
-        handle
-            .write_all(b"\n")
-            .map_err(|e| ToonError::message(format!("Write error: {e}")))?;
+        handle.write_all(b"\n").map_err(ToonError::stdout_write)?;
     }
     Ok(())
 }
 
 fn write_chunks(args: &Args, chunks: &[String]) -> Result<()> {
     if let Some(ref path) = args.output {
-        let file = File::create(path).map_err(|e| {
-            ToonError::message(format!("Failed to create file '{}': {e}", path.display()))
-        })?;
+        let file = File::create(path).map_err(|e| ToonError::file_create(path.clone(), e))?;
         let mut writer = BufWriter::new(file);
 
         for chunk in chunks {
             writer
                 .write_all(chunk.as_bytes())
-                .map_err(|e| ToonError::message(format!("Write error: {e}")))?;
+                .map_err(|e| ToonError::file_write(path.clone(), e))?;
         }
         // Trailing newline
         writer
             .write_all(b"\n")
-            .map_err(|e| ToonError::message(format!("Write error: {e}")))?;
+            .map_err(|e| ToonError::file_write(path.clone(), e))?;
     } else {
         let stdout = io::stdout();
         let mut handle = stdout.lock();
@@ -228,12 +211,10 @@ fn write_chunks(args: &Args, chunks: &[String]) -> Result<()> {
         for chunk in chunks {
             handle
                 .write_all(chunk.as_bytes())
-                .map_err(|e| ToonError::message(format!("Write error: {e}")))?;
+                .map_err(ToonError::stdout_write)?;
         }
         // Trailing newline
-        handle
-            .write_all(b"\n")
-            .map_err(|e| ToonError::message(format!("Write error: {e}")))?;
+        handle.write_all(b"\n").map_err(ToonError::stdout_write)?;
     }
     Ok(())
 }
