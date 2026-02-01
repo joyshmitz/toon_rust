@@ -27,8 +27,8 @@ pub use options::{
 /// # Errors
 /// Returns an error if the JSON input is invalid.
 pub fn json_to_toon(json: &str) -> crate::error::Result<String> {
-    let value: serde_json::Value = serde_json::from_str(json)
-        .map_err(|err| crate::error::ToonError::message(err.to_string()))?;
+    let value: serde_json::Value =
+        serde_json::from_str(json).map_err(|e| crate::error::ToonError::json_parse(&e))?;
     Ok(encode(value, None))
 }
 
@@ -41,7 +41,7 @@ pub fn json_to_toon(json: &str) -> crate::error::Result<String> {
 pub fn toon_to_json(toon: &str) -> crate::error::Result<String> {
     let value = try_decode(toon, None)?;
     let value = serde_json::Value::from(value);
-    serde_json::to_string(&value).map_err(|err| crate::error::ToonError::message(err.to_string()))
+    serde_json::to_string(&value).map_err(|e| crate::error::ToonError::json_stringify(&e))
 }
 
 pub type JsonPrimitive = StringOrNumberOrBoolOrNull;
