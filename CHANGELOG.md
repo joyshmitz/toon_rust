@@ -6,6 +6,27 @@ Entries are organized by tagged release, with capabilities grouped thematically 
 
 ---
 
+## [v0.2.4](https://github.com/Dicklesworthstone/toon_rust/releases/tag/v0.2.4) -- 2026-08-24 (released)
+
+Maintenance release. Everything on `main` since [v0.2.3](https://github.com/Dicklesworthstone/toon_rust/releases/tag/v0.2.3) (2026-04-24): 34 commits, entirely dependency currency, CI hygiene, and small lint/const-correctness fixes. No behaviour changes to the TOON encoder/decoder and no API breaks, so this is a patch bump.
+
+### Dependencies
+
+- Refreshed the full resolver graph to latest semver-compatible versions.
+- Optional `asupersync` pin advanced 0.3.x -> `=0.4.4`; the `asupersync-macros` companion is held at the same 0.4.4 so the pinned family stays uniform.
+
+### Fixes
+
+- `is_key_value_content` / `is_data_row` and `find_closing_quote` / `find_unquoted_char` are now `const fn`.
+- Installer retries release downloads instead of failing on a transient error.
+- Test assertion in `decode::event_builder` now reports the offending value on failure (`assert_eq!`) rather than a bare `is_empty()` check.
+
+### Known issues
+
+- `cargo clippy --all-features` currently hits a rustc ICE (`unexpected rigid alias in layout_of after normalization`) in the optional `async-stream` path. This is a floating-`nightly` toolchain bug, reproduces at v0.2.3, and does not affect the default-feature build that ships: `cargo check --all-features` and the full default-feature clippy/test gate are clean.
+
+---
+
 ## [Unreleased](https://github.com/Dicklesworthstone/toon_rust/compare/v0.2.1...HEAD)
 
 Since v0.2.1 (2026-02-22). HEAD is [`153bd4f`](https://github.com/Dicklesworthstone/toon_rust/commit/153bd4fec34d3811d0e318ae0078a156f6974207).
