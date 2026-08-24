@@ -254,7 +254,7 @@ mod tests {
             build_node_from_events([JsonStreamEvent::StartObject, JsonStreamEvent::EndObject])
                 .unwrap();
         if let NodeValue::Object(obj) = root {
-            assert!(obj.entries.is_empty());
+            assert_eq!(obj.entries, [] as [(String, NodeValue); 0]);
         } else {
             panic!("expected object");
         }
